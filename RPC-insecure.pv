@@ -1,0 +1,77 @@
+(*
+   A -> B: msg
+   B -> A: f(msg)
+*)
+
+free ch: channel.
+
+type skey.
+type pkey.
+fun pk(skey):pkey.
+
+fun smsg(bitstring, bitstring): bitstring [data].
+
+fun penc(pkey,bitstring): bitstring.
+reduc forall sk:skey, m:bitstring;
+      pdec(sk,penc(pk(sk),m)) = m.
+
+fun sign(skey,bitstring): bitstring.
+reduc forall sk:skey, m:bitstring;
+      verify(pk(sk),m,sign(sk,m)) = true.
+
+
+free msg:bitstring [private].
+fun f(bitstring):bitstring [private].
+
+(* Secrecy of msg and f(msg): SHOULD BE TRUE *)
+query attacker(msg).
+query attacker(f(msg)).
+
+(* Request Authentication: SHOULD BE TRUE *)
+event SendA(bitstring).
+event RecvB(bitstring).
+query m:bitstring; event(RecvB(m)) ==> event(SendA(m)).
+
+(* Response Authentication: SHOULD BE TRUE *)
+event SendB(bitstring,bitstring).
+event RecvA(bitstring,bitstring).
+query req:bitstring,resp:bitstring;
+      event(RecvA(req,resp)) ==> event(SendB(req,resp)).
+
+(* Reachability Queries: sanity checks SHOULD BE FALSE *)
+
+query req:bitstring; event(SendA(req)).
+query req:bitstring; event(RecvB(req)).
+query req:bitstring, resp:bitstring; event(SendB(req,resp)).
+query req:bitstring, resp:bitstring; event(RecvA(req,resp)).
+
+
+(* A -> B: m *)
+let A(skA:skey,pkB:pkey,req:bitstring) =
+  out(ch, smsg(penc(pkB, req), sign(skA, penc(pkB, req))));
+  event SendA(req);
+  in(ch, smsg(eres, sig));
+  if verify(pkB, eres, sig) then
+  let res = pdec(skA, eres) in
+  event RecvA(req, res).
+
+
+(* B -> A: f(m) *)
+let B(skB:skey,pkA:pkey) =
+  in(ch, smsg(ereq, sig));
+  if verify(pkA, ereq, sig) then
+  let req = pdec(skB, ereq) in
+  event RecvB(req);
+  out(ch, smsg(penc(pkA, f(req)), sign(skB, penc(pkA, f(req)))));
+  event SendB(req, f(req)).
+
+
+process
+  new skA: skey;
+  new skB: skey;
+  let pkA = pk(skA) in
+  let pkB = pk(skB) in
+  out(ch,(pkA,pkB));
+  A(skA,pkB,msg) | B(skB,pkA)
+  
+  (* A(skA,pkI) | B(skB,pkI) *)
