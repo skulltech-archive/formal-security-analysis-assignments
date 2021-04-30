@@ -9,6 +9,7 @@ type skey.
 type pkey.
 fun pk(skey):pkey.
 
+(* encrypted-then-signed message; tuple <encrypted message, signature> *)
 fun smsg(bitstring, bitstring): bitstring [data].
 
 fun penc(pkey,bitstring): bitstring.
