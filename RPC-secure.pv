@@ -9,6 +9,7 @@ type skey.
 type pkey.
 fun pk(skey):pkey.
 
+fun nmsg(bitstring, bitstring): bitstring [data]. 
 fun smsg(bitstring, bitstring): bitstring [data].
 
 fun penc(pkey,bitstring): bitstring.
@@ -48,22 +49,26 @@ query req:bitstring, resp:bitstring; event(RecvA(req,resp)).
 
 (* A -> B: m *)
 let A(skA:skey,pkB:pkey,req:bitstring) =
-  out(ch, smsg(penc(pkB, req), sign(skA, penc(pkB, req))));
+  in(ch, enmsg:bitstring);
+  let nc = pdec(skA, enmsg) in
   event SendA(req);
-  in(ch, smsg(eres, sig));
-  if verify(pkB, eres, sig) then
-  let res = pdec(skA, eres) in
+  out(ch, smsg(penc(pkB, nmsg(nc, req)), sign(skA, penc(pkB, nmsg(nc, req)))));
+  in(ch, smsg(enres, sig));
+  if verify(pkB, enmsg, sig) then
+  let nmsg(=nc, res) = pdec(skA, enres) in
   event RecvA(req, res).
 
 
 (* B -> A: f(m) *)
 let B(skB:skey,pkA:pkey) =
-  in(ch, smsg(ereq, sig));
-  if verify(pkA, ereq, sig) then
-  let req = pdec(skB, ereq) in
+  new nc: bitstring;
+  out(ch, penc(pkA, nc));
+  in(ch, smsg(enmsg, sig));
+  if verify(pkA, enmsg, sig) then
+  let nmsg(=nc, req) = pdec(skB, enmsg) in
   event RecvB(req);
-  out(ch, smsg(penc(pkA, f(req)), sign(skB, penc(pkA, f(req)))));
-  event SendB(req, f(req)).
+  event SendB(req, f(req));
+  out(ch, smsg(penc(pkA, nmsg(nc, f(req))), sign(skB, penc(pkA, nmsg(nc, f(req)))))).
 
 
 process
