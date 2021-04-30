@@ -47,7 +47,7 @@ query req:bitstring, resp:bitstring; event(RecvA(req,resp)).
 
 
 (* A -> B: m *)
-let A(skA:skey,pkB:pkey,req:bitstring) =
+let A(skA: skey, pkB: pkey, req: bitstring) =
   out(ch, smsg(penc(pkB, req), sign(skA, penc(pkB, req))));
   event SendA(req);
   in(ch, smsg(eres, sig));
@@ -57,7 +57,7 @@ let A(skA:skey,pkB:pkey,req:bitstring) =
 
 
 (* B -> A: f(m) *)
-let B(skB:skey,pkA:pkey) =
+let B(skB: skey, pkA: pkey) =
   in(ch, smsg(ereq, sig));
   if verify(pkA, ereq, sig) then
   let req = pdec(skB, ereq) in

@@ -48,8 +48,8 @@ query req:bitstring, resp:bitstring; event(RecvA(req,resp)).
 
 
 (* A -> B: m *)
-let A(skA:skey,pkB:pkey,req:bitstring) =
-  in(ch, enmsg:bitstring);
+let A(skA: skey, pkB: pkey, req: bitstring) =
+  in(ch, enmsg: bitstring);
   let nc = pdec(skA, enmsg) in
   event SendA(req);
   out(ch, smsg(penc(pkB, nmsg(nc, req)), sign(skA, penc(pkB, nmsg(nc, req)))));
@@ -60,7 +60,7 @@ let A(skA:skey,pkB:pkey,req:bitstring) =
 
 
 (* B -> A: f(m) *)
-let B(skB:skey,pkA:pkey) =
+let B(skB: skey, pkA: pkey) =
   new nc: bitstring;
   out(ch, penc(pkA, nc));
   in(ch, smsg(enmsg, sig));
